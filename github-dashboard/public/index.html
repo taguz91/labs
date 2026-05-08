@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d1117;
+    --bg2:       #161b22;
+    --bg3:       #21262d;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --muted:     #7d8590;
+    --accent:    #58a6ff;
+    --green:     #3fb950;
+    --red:       #f85149;
+    --yellow:    #d29922;
+    --purple:    #bc8cff;
+    --orange:    #ffa657;
+    --radius:    6px;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -0.3px;
+  }
+
+  .logo svg { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sync-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .sync-btn:hover { border-color: var(--accent); background: var(--bg); }
+  .sync-btn.syncing { opacity: 0.6; pointer-events: none; }
+
+  .last-sync {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* ── Filters ── */
+  .filters {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+  }
+
+  .filter-group label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .filter-group select,
+  .filter-group input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+    cursor: pointer;
+  }
+
+  .filter-group select:focus,
+  .filter-group input:focus { border-color: var(--accent); }
+
+  .filter-reset {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13px;
+    align-self: flex-end;
+    transition: all 0.15s;
+  }
+  .filter-reset:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── Stats Cards ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-color, var(--accent));
+  }
+
+  .stat-card:hover { border-color: var(--card-color, var(--accent)); }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--card-color, var(--text));
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .stat-icon {
+    position: absolute;
+    top: 16px; right: 16px;
+    opacity: 0.15;
+    font-size: 32px;
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    padding: 10px 18px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    position: relative;
+    transition: color 0.15s;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .tab.active {
+    color: var(--text);
+    background: var(--bg2);
+  }
+
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .tab-badge {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    margin-left: 6px;
+    color: var(--muted);
+  }
+
+  .tab.active .tab-badge { background: var(--accent); color: #000; }
+
+  /* ── Table ── */
+  .table-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: var(--bg3); }
+
+  .repo-name {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .pr-title {
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  .pr-link { color: var(--accent); text-decoration: none; }
+  .pr-link:hover { text-decoration: underline; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .badge-green  { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-red    { background: rgba(248,81,73,0.15);  color: var(--red); }
+  .badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .badge-blue   { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .badge-purple { background: rgba(188,140,255,0.15);color: var(--purple); }
+  .badge-muted  { background: var(--bg3); color: var(--muted); }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* ── Loading ── */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 10px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error   { border-color: var(--red);   color: var(--red); }
+
+  /* ── Section header ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .author-chip {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .avatar {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+  }
+
+  .date-col {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+    </svg>
+    GitHub Dashboard
+  </div>
+  <div class="header-right">
+    <span class="last-sync" id="lastSync">—</span>
+    <button class="sync-btn" id="syncBtn" onclick="triggerSync()">
+      <span id="syncIcon">↻</span> Sync Now
+    </button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label>Repository</label>
+      <select id="filterRepo" onchange="applyFilters()">
+        <option value="">All repos</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Author</label>
+      <select id="filterAuthor" onchange="applyFilters()">
+        <option value="">All authors</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>From date</label>
+      <input type="date" id="filterSince" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <label>To date</label>
+      <input type="date" id="filterUntil" onchange="applyFilters()">
+    </div>
+    <button class="filter-reset" onclick="resetFilters()">✕ Reset</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card" style="--card-color: var(--accent)">
+      <div class="stat-icon">⟳</div>
+      <div class="stat-label">My Open PRs</div>
+      <div class="stat-value" id="statMyPRs">—</div>
+      <div class="stat-sub">authored by me</div>
+    </div>
+    <div class="stat-card" style="--card-color: var(--purple)">
+      <div class="stat-icon">👁</div>
+      <div class="stat-label">Needs My Review</div>
+      <div class="stat-value" id="statReview">—</div>
+      <div class="stat-sub">review requested</div>
+    </div>
+    <div class="stat-card" style="--card-color: var(--green)">
+      <div class="stat-icon">✓</div>
+      <div class="stat-label">Actions Passing</div>
+      <div class="stat-value" id="statSuccess">—</div>
+      <div class="stat-sub">successful runs</div>
+    </div>
+    <div class="stat-card" style="--card-color: var(--red)">
+      <div class="stat-icon">✗</div>
+      <div class="stat-label">Actions Failing</div>
+      <div class="stat-value" id="statFailure">—</div>
+      <div class="stat-sub">failed / timed out</div>
+    </div>
+    <div class="stat-card" style="--card-color: var(--yellow)">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-label">In Progress</div>
+      <div class="stat-value" id="statInProgress">—</div>
+      <div class="stat-sub">running now</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('prs', this)">
+      Pull Requests <span class="tab-badge" id="badgePRs">0</span>
+    </button>
+    <button class="tab" onclick="switchTab('review', this)">
+      Needs Review <span class="tab-badge" id="badgeReview">0</span>
+    </button>
+    <button class="tab" onclick="switchTab('runs', this)">
+      Action Runs <span class="tab-badge" id="badgeRuns">0</span>
+    </button>
+    <button class="tab" onclick="switchTab('failures', this)">
+      Failures <span class="tab-badge" id="badgeFailures">0</span>
+    </button>
+  </div>
+
+  <!-- Panel: My PRs -->
+  <div class="panel active" id="panel-prs">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>PR</th>
+            <th>Repository</th>
+            <th>Status</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="tPRs"><tr><td colspan="4"><div class="loading"><div class="spinner"></div> Loading…</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Panel: Needs Review -->
+  <div class="panel" id="panel-review">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>PR</th>
+            <th>Repository</th>
+            <th>Author</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="tReview"><tr><td colspan="4"><div class="loading"><div class="spinner"></div> Loading…</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Panel: Action Runs -->
+  <div class="panel" id="panel-runs">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Workflow</th>
+            <th>Repository</th>
+            <th>Branch</th>
+            <th>Result</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="tRuns"><tr><td colspan="5"><div class="loading"><div class="spinner"></div> Loading…</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Panel: Failures -->
+  <div class="panel" id="panel-failures">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Workflow</th>
+            <th>Repository</th>
+            <th>Branch</th>
+            <th>Triggered by</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="tFailures"><tr><td colspan="5"><div class="loading"><div class="spinner"></div> Loading…</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+
+let filters = { repo: '', author: '', since: '', until: '' };
+
+// ── Filters ────────────────────────────────────────────────────────────────
+
+async function loadFilterOptions() {
+  const [repos, authors] = await Promise.all([
+    fetch(`${API}/api/repos`).then(r => r.json()).catch(() => []),
+    fetch(`${API}/api/authors`).then(r => r.json()).catch(() => []),
+  ]);
+
+  const repoSel = document.getElementById('filterRepo');
+  repos.forEach(r => {
+    const o = document.createElement('option');
+    o.value = r; o.textContent = r;
+    repoSel.appendChild(o);
+  });
+
+  const authSel = document.getElementById('filterAuthor');
+  authors.forEach(a => {
+    const o = document.createElement('option');
+    o.value = a; o.textContent = a;
+    authSel.appendChild(o);
+  });
+}
+
+function applyFilters() {
+  filters.repo   = document.getElementById('filterRepo').value;
+  filters.author = document.getElementById('filterAuthor').value;
+  filters.since  = document.getElementById('filterSince').value;
+  filters.until  = document.getElementById('filterUntil').value;
+  loadAll();
+}
+
+function resetFilters() {
+  document.getElementById('filterRepo').value   = '';
+  document.getElementById('filterAuthor').value = '';
+  document.getElementById('filterSince').value  = '';
+  document.getElementById('filterUntil').value  = '';
+  filters = { repo: '', author: '', since: '', until: '' };
+  loadAll();
+}
+
+function qs(extra = {}) {
+  const p = { ...filters, ...extra };
+  return '?' + Object.entries(p).filter(([,v]) => v).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+}
+
+// ── Data Loading ───────────────────────────────────────────────────────────
+
+async function loadSummary() {
+  try {
+    const d = await fetch(`${API}/api/summary${qs()}`).then(r => r.json());
+    document.getElementById('statMyPRs').textContent     = d.myOpenPRs    ?? '—';
+    document.getElementById('statReview').textContent    = d.needsMyReview ?? '—';
+    document.getElementById('statSuccess').textContent   = d.success       ?? '—';
+    document.getElementById('statFailure').textContent   = d.failure       ?? '—';
+    document.getElementById('statInProgress').textContent= d.inProgress    ?? '—';
+
+    if (d.lastSync?.synced_at) {
+      document.getElementById('lastSync').textContent =
+        'synced ' + relTime(d.lastSync.synced_at);
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function loadPRs() {
+  const username = await getUsername();
+  // My open PRs
+  const myPRs = await fetch(`${API}/api/prs${qs({ state: 'open', author: filters.author || username })}`).then(r => r.json()).catch(() => []);
+  renderPRTable('tPRs', myPRs, false);
+  document.getElementById('badgePRs').textContent = myPRs.length;
+
+  // Needs review
+  const revPRs = await fetch(`${API}/api/prs${qs({ state: 'open' })}`).then(r => r.json()).catch(() => []);
+  const needsReview = revPRs.filter(p => p.review_requested === 1);
+  renderPRTable('tReview', needsReview, true);
+  document.getElementById('badgeReview').textContent = needsReview.length;
+}
+
+async function loadRuns() {
+  const runs = await fetch(`${API}/api/runs${qs()}`).then(r => r.json()).catch(() => []);
+  const failures = runs.filter(r => ['failure','timed_out'].includes(r.conclusion));
+  renderRunTable('tRuns', runs);
+  renderRunTable('tFailures', failures, true);
+  document.getElementById('badgeRuns').textContent     = runs.length;
+  document.getElementById('badgeFailures').textContent = failures.length;
+}
+
+let _username = null;
+async function getUsername() {
+  if (_username) return _username;
+  try {
+    const s = await fetch(`${API}/api/status`).then(r => r.json());
+    _username = s.username || '';
+  } catch(e) { _username = ''; }
+  return _username;
+}
+
+function loadAll() {
+  loadSummary();
+  loadPRs();
+  loadRuns();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+
+function renderPRTable(tbodyId, prs, showAuthor) {
+  const tb = document.getElementById(tbodyId);
+  if (!prs.length) {
+    tb.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">🎉</div>No pull requests found</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = prs.map(pr => `
+    <tr>
+      <td>
+        <div class="pr-title"><a href="${pr.url}" target="_blank" class="pr-link">${esc(pr.title)}</a></div>
+        <div class="repo-name">#${pr.number}</div>
+      </td>
+      <td><span class="repo-name">${esc(pr.repo)}</span></td>
+      <td>${showAuthor
+        ? `<span class="author-chip"><img class="avatar" src="https://github.com/${pr.author}.png?size=20" onerror="this.style.display='none'">${esc(pr.author)}</span>`
+        : prStateBadge(pr)
+      }</td>
+      <td class="date-col">${relTime(pr.updated_at)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderRunTable(tbodyId, runs, failOnly = false) {
+  const tb = document.getElementById(tbodyId);
+  if (!runs.length) {
+    tb.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">${failOnly ? '✅' : '📭'}</div>${failOnly ? 'No failures — all clear!' : 'No runs found'}</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = runs.map(r => `
+    <tr>
+      <td><a href="${r.url}" target="_blank" class="pr-link">${esc(r.workflow)}</a></td>
+      <td><span class="repo-name">${esc(r.repo)}</span></td>
+      <td><span class="repo-name">${esc(r.branch || '—')}</span></td>
+      ${failOnly ? `<td><span class="repo-name">${esc(r.triggered_by || '—')}</span></td>` : `<td>${runBadge(r)}</td>`}
+      <td class="date-col">${relTime(r.updated_at)}</td>
+    </tr>
+  `).join('');
+}
+
+function prStateBadge(pr) {
+  if (pr.draft)  return `<span class="badge badge-muted">◦ Draft</span>`;
+  if (pr.state === 'open')  return `<span class="badge badge-blue">⟳ Open</span>`;
+  if (pr.merged_at) return `<span class="badge badge-purple">⎇ Merged</span>`;
+  return `<span class="badge badge-muted">✕ Closed</span>`;
+}
+
+function runBadge(run) {
+  if (run.status === 'in_progress') return `<span class="badge badge-yellow">⚡ Running</span>`;
+  if (run.status === 'queued')      return `<span class="badge badge-muted">⏳ Queued</span>`;
+  const c = run.conclusion;
+  if (c === 'success')   return `<span class="badge badge-green">✓ Success</span>`;
+  if (c === 'failure')   return `<span class="badge badge-red">✗ Failure</span>`;
+  if (c === 'cancelled') return `<span class="badge badge-muted">⊘ Cancelled</span>`;
+  if (c === 'skipped')   return `<span class="badge badge-muted">⇢ Skipped</span>`;
+  if (c === 'timed_out') return `<span class="badge badge-red">⏱ Timed out</span>`;
+  return `<span class="badge badge-muted">${c || run.status}</span>`;
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── Sync ───────────────────────────────────────────────────────────────────
+
+async function triggerSync() {
+  const btn = document.getElementById('syncBtn');
+  const icon = document.getElementById('syncIcon');
+  btn.classList.add('syncing');
+  icon.style.animation = 'spin 0.8s linear infinite';
+
+  try {
+    await fetch(`${API}/api/sync`, { method: 'POST' });
+    showToast('Sync started in background', 'success');
+    setTimeout(() => { loadAll(); loadFilterOptions(); }, 3000);
+    setTimeout(() => { loadAll(); loadFilterOptions(); }, 8000);
+  } catch(e) {
+    showToast('Sync failed: ' + e.message, 'error');
+  } finally {
+    setTimeout(() => {
+      btn.classList.remove('syncing');
+      icon.style.animation = '';
+    }, 3000);
+  }
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+
+function relTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const diff = (Date.now() - d) / 1000;
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+(async () => {
+  await loadFilterOptions();
+  loadAll();
+  // Refresh summary every 30 seconds
+  setInterval(loadSummary, 30_000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "github-dashboard",
+  "version": "1.0.0",
+  "description": "Local GitHub activity dashboard",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "sync": "node src/sync.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0"
+  }
+}
